@@ -2,78 +2,71 @@ using UnityEngine;
 
 public class GameManager : MonoBehaviour
 {
-    [Header("Gameplay Values")]
-    public int lives = 3;
-    public int enemiesDefeated = 0;
+    // Singleton instance for easy global access
+    public static GameManager Instance { get; private set; }
 
-    [Header("References")]
-    [SerializeField] private HUDController hud;
-
-    private void Start()
-    {
-        //Find HUD if not assigned
-        if (hud == null)
-        {
-            hud = FindObjectOfType<HUDController>();
-            if (hud == null)
-            {
-                Debug.LogError("GameManager: No HUDController found in the scene.");
-                return;
-            }
-        }
-
-        //Initialize HUD display
-        hud.UpdateLives(lives);
-        hud.UpdateEnemies(enemiesDefeated);
-using UnityEngine.InputSystem.LowLevel;
-
-public class GameManager : MonoBehaviour
-{
-
-    public int targetScore = 3;
-    public int startingLife = 3;
-
-    private int currentScore = 0;
-    private int currentLife;
-
-    public bool isPlaying = true;
     public enum GameStatus
     {
         Playing,
         Won,
         Lost
     }
-    public GameStatus currentStatus;
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
-    {
-        currentStatus = GameStatus.Playing;
-        currentLife = startingLife;
-    }
 
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
+    [Header("Game Settings")]
+    [SerializeField] private int startingLives = 3;
+    [SerializeField] private int targetEnemies = 5;
 
-    public void AddScore()
+    [Header("Game State")]
+    [SerializeField] private GameStatus currentStatus = GameStatus.Playing;
+    private int currentLives;
+    private int enemiesDefeated = 0;
+
+    [Header("References")]
+    [SerializeField] private HUDController hud;
+
+    public GameStatus CurrentStatus => currentStatus;
+
+    private void Awake()
     {
-        if (currentStatus != GameStatus.Playing)
+        // Enforce Singleton pattern
+        if (Instance != null && Instance != this)
         {
+            Destroy(gameObject);
             return;
         }
+        Instance = this;
+    }
 
-        currentScore++;
+    private void Start()
+    {
+        currentLives = startingLives;
+        currentStatus = GameStatus.Playing;
 
-        Debug.Log(
-            "Score: " +
-            currentScore +
-            " / " +
-            targetScore
-        );
+        // Find HUD if not assigned in the Inspector
+        if (hud == null)
+        {
+            hud = FindFirstObjectByType<HUDController>();
+            if (hud == null)
+            {
+                Debug.LogWarning("GameManager: No HUDController found in the scene.");
+            }
+        }
 
-        if (currentScore >= targetScore)
+        // Initialize HUD display
+        UpdateHUD();
+    }
+
+    public void EnemyDefeated()
+    {
+        // Do nothing if the game is already over
+        if (currentStatus != GameStatus.Playing) return;
+
+        enemiesDefeated++;
+        UpdateHUD();
+
+        Debug.Log("Enemies Defeated: " + enemiesDefeated + " / " + targetEnemies);
+
+        if (enemiesDefeated >= targetEnemies)
         {
             WinGame();
         }
@@ -81,50 +74,40 @@ public class GameManager : MonoBehaviour
 
     public void LoseLife()
     {
-        lives--;
-        hud.UpdateLives(lives);
+        // Do nothing if the game is already over
+        if (currentStatus != GameStatus.Playing) return;
 
-        if (lives <= 0)
-        {
-            Debug.Log("Game Over!");
-        }
-    }
+        currentLives--;
+        UpdateHUD();
 
-    public void EnemyDefeated()
-    {
-        enemiesDefeated++;
-        hud.UpdateEnemies(enemiesDefeated);
-    }
-}
-        if (currentStatus != GameStatus.Playing)
-        {
-            return;
-        }
+        Debug.Log("Lives remaining: " + currentLives);
 
-        currentLife--;
-
-        Debug.Log(
-            "Lives: " +
-            currentLife
-        );
-
-        if (currentLife <= 0)
+        if (currentLives <= 0)
         {
             LoseGame();
         }
     }
 
-    void WinGame()
+    private void UpdateHUD()
     {
-        currentStatus = GameStatus.Won;
-
-        Debug.Log("YOU WIN!");
+        if (hud != null)
+        {
+            hud.UpdateLives(currentLives);
+            hud.UpdateEnemies(enemiesDefeated);
+        }
     }
 
-    void LoseGame()
+    private void WinGame()
+    {
+        currentStatus = GameStatus.Won;
+        Debug.Log("YOU WIN!");
+        // TODO: Trigger win UI or load victory scene here
+    }
+
+    private void LoseGame()
     {
         currentStatus = GameStatus.Lost;
-
         Debug.Log("GAME OVER");
+        // TODO: Trigger game over UI or restart prompt here
     }
 }
