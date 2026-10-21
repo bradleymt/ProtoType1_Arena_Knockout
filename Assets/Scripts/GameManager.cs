@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using UnityEngine;
 
 public class GameManager : MonoBehaviour
@@ -39,6 +40,9 @@ public class GameManager : MonoBehaviour
 
     private void Start()
     {
+        //make sure time runs if the scene was reloaded after a game end
+        Time.timeScale = 1f;
+
         currentLives = startingLives;
         currentStatus = GameStatus.Playing;
 
@@ -48,7 +52,7 @@ public class GameManager : MonoBehaviour
             hud = FindFirstObjectByType<HUDController>();
             if (hud == null)
             {
-                Debug.LogWarning("GameManager: No HUDController found in the scene.");
+                UnityEngine.Debug.LogWarning("GameManager: No HUDController found in the scene.");
             }
         }
 
@@ -64,7 +68,7 @@ public class GameManager : MonoBehaviour
         enemiesDefeated++;
         UpdateHUD();
 
-        Debug.Log("Enemies Defeated: " + enemiesDefeated + " / " + targetEnemies);
+        UnityEngine.Debug.Log("Enemies Defeated: " + enemiesDefeated + " / " + targetEnemies);
 
         if (enemiesDefeated >= targetEnemies)
         {
@@ -80,7 +84,7 @@ public class GameManager : MonoBehaviour
         currentLives--;
         UpdateHUD();
 
-        Debug.Log("Lives remaining: " + currentLives);
+        UnityEngine.Debug.Log("Lives remaining: " + currentLives);
 
         if (currentLives <= 0)
         {
@@ -100,14 +104,24 @@ public class GameManager : MonoBehaviour
     private void WinGame()
     {
         currentStatus = GameStatus.Won;
-        Debug.Log("YOU WIN!");
-        // TODO: Trigger win UI or load victory scene here
+        UnityEngine.Debug.Log("YOU WIN!");
+
+        //ui first then freeze
+        if (hud != null)
+            hud.ShowEndMessage("YOU WIN");
+
+        Time.timeScale = 0f;
     }
 
     private void LoseGame()
     {
         currentStatus = GameStatus.Lost;
-        Debug.Log("GAME OVER");
-        // TODO: Trigger game over UI or restart prompt here
+        UnityEngine.Debug.Log("GAME OVER");
+
+        //ui first then freeze
+        if (hud != null)
+            hud.ShowEndMessage("YOU LOSE");
+
+        Time.timeScale = 0f;
     }
 }
